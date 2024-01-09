@@ -1,33 +1,32 @@
 # Define the name of the GitHub Actions workflow
 name: Python Image Build
 
-# This workflow is triggered by a call from another workflow
+# This workflow is triggered manually using workflow_dispatch
 on:
-  workflow_call:
-    # Define inputs that can be provided when this workflow is called
+  workflow_dispatch:
+    # Define inputs that can be provided when this workflow is manually triggered
     inputs:
       python-version:
         required: true
         type: string
+        description: 'The Python version to use (e.g., 3.8, 3.9)'
       image-name:
         required: true
         type: string
+        description: 'The name of the Docker image'
       image-tag:
         required: false
         type: string
         default: 'latest'
+        description: 'The tag for the Docker image'
       aws-region:
         required: true
         type: string
+        description: 'The AWS region for configuring AWS credentials'
       env:
         required: true
         type: string
         description: 'JSON string containing environment variables (docker-username, docker-password, aws-assume-role)'
-
-    # Define secrets that can be used in the workflow
-    secrets:
-      env-secrets:
-        required: true
 
 # Define the jobs and steps the workflow will execute
 jobs:
@@ -51,7 +50,7 @@ jobs:
         # Run a custom script to parse the 'env' input and set it as environment variables
         run: |
           echo "Parsing environment variables..."
-          env_data=$(echo '${{ secrets.env-secrets }}' | jq -r '.')
+          env_data=$(echo '${{ inputs.env }}' | jq -r '.')
           echo "DOCKER_USERNAME=$(echo "$env_data" | jq -r '.docker-username')" >> $GITHUB_ENV
           echo "DOCKER_PASSWORD=$(echo "$env_data" | jq -r '.docker-password')" >> $GITHUB_ENV
           echo "AWS_ASSUME_ROLE=$(echo "$env_data" | jq -r '.aws-assume-role')" >> $GITHUB_ENV
