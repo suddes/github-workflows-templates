@@ -1,33 +1,33 @@
 # Define the name of the GitHub Actions workflow
 name: Python Image Build
 
-# Trigger this workflow when it is called from another workflow
+# This workflow is triggered by a call from another workflow
 on:
-  workflow_dispatch:
+  workflow_call:
     # Define inputs that can be provided when this workflow is called
     inputs:
-      # Input for specifying the Python version to use
       python-version:
         required: true
         type: string
-      # Input for specifying the name of the Docker image
       image-name:
         required: true
         type: string
-      # Input for specifying the tag of the Docker image; defaults to 'latest'
       image-tag:
         required: false
         type: string
         default: 'latest'
-      # Input for specifying the AWS region
       aws-region:
         required: true
         type: string
-      # Input for providing a JSON string with environment variables
       env:
         required: true
         type: string
-        description: 'JSON string containing environment variables (docker-username, docker-password, aws-role-to-assume)'
+        description: 'JSON string containing environment variables (docker-username, docker-password, aws-assume-role)'
+
+    # Define secrets that can be used in the workflow
+    secrets:
+      env-secrets:
+        required: true
 
 # Define the jobs and steps the workflow will execute
 jobs:
@@ -47,6 +47,15 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
 
+      - name: Parse environment variables
+        # Run a custom script to parse the 'env' input and set it as environment variables
+        run: |
+          echo "Parsing environment variables..."
+          env_data=$(echo '${{ secrets.env-secrets }}' | jq -r '.')
+          echo "DOCKER_USERNAME=$(echo "$env_data" | jq -r '.docker-username')" >> $GITHUB_ENV
+          echo "DOCKER_PASSWORD=$(echo "$env_data" | jq -r '.docker-password')" >> $GITHUB_ENV
+          echo "AWS_ASSUME_ROLE=$(echo "$env_data" | jq -r '.aws-assume-role')" >> $GITHUB_ENV
+
       - name: Harden Runner
         # Use the 'harden-runner' action to enhance security by auditing outbound traffic
         uses: step-security/harden-runner@v2
@@ -57,21 +66,11 @@ jobs:
         # Use the 'configure-aws-credentials' action to set up AWS credentials by assuming a role
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          # Extract the AWS role to assume from the input 'env' JSON string
-          role-to-assume: ${{ fromJSON(inputs.env).aws-role-to-assume }}
-          # Use the AWS region specified in the workflow input
+          role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
           aws-region: ${{ inputs.aws-region }}
 
-      - name: Parse environment variables
-        # Run a custom script to parse the 'env' input and set Docker credentials as environment variables
-        run: |
-          echo "Parsing environment variables..."
-          env_data=$(echo '${{ inputs.env }}' | jq -r '.')
-          echo "DOCKER_USERNAME=$(echo "$env_data" | jq -r '.docker-username')" >> $GITHUB_ENV
-          echo "DOCKER_PASSWORD=$(echo "$env_data" | jq -r '.docker-password')" >> $GITHUB_ENV
-
       - name: Login to Docker Hub
-        # Log in to Docker Hub using the parsed Docker credentials
+        # Log in to Docker Hub using the credentials from environment variables
         run: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
       - name: Build and push Docker image
