@@ -27,6 +27,12 @@ on:
         required: false
         type: string
         default: 'latest'
+      
+      aws-region:
+          description: 'Deployment Regiom'
+          required: true
+          type: string
+          default: us-east-1
 
 # Define the jobs to run
 jobs:
