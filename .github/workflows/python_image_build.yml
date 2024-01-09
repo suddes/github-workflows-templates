@@ -20,7 +20,7 @@ jobs:
       permissions:
           id-token: write # need this for OIDC
           contents: read
-      uses: suddes/github-workflows-templates/blob/main/.github/workflows/docket_login.yml@main
+      uses: suddes/github-workflows-templates/.github/workflows/docket_login.yml@main
       with:
             env: ${{ inputs.environment || 'dev' }}
       secrets: inherit
