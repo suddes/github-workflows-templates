@@ -15,5 +15,11 @@ on:
 # Define the jobs to run
 jobs:
   call-local-workflow:
-    uses: ./.github/workflows/local-workflow.yml
+    name: Call Workflow in Same repo as code
+    uses: ./.github/workflows/ldocket_login.yml
     secrets: inherit
+
+  call-reomte-workflow:
+      name: Call Workflow in different repo as code (need access)
+      uses: suddes/github-workflows-templates/.github/workflows/docket_login.yml@main
+      secrets: inherit
