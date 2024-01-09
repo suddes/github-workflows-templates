@@ -14,10 +14,6 @@ on:
     
 # Define the jobs to run
 jobs:
-  login-to-docker-hub:
-      name: Login to Docker Hub
-      # Log in to Docker Hub using the credentials from environment variables
-      uses: .github/workflows/docket_login.yml@main
-      with:
-            env: ${{ inputs.environment || 'dev' }}
-      secrets: inherit
+  call-local-workflow:
+    uses: ./.github/workflows/local-workflow.yml
+    secrets: inherit
