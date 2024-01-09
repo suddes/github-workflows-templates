@@ -1,47 +1,84 @@
-# Name of the workflow
+# Define the name of the GitHub Actions workflow
 name: Python Image Build
 
-# This workflow is triggered by a call from another workflow
+# Trigger this workflow when it is called from another workflow
 on:
   workflow_dispatch:
+    # Define inputs that can be provided when this workflow is called
     inputs:
+      # Input for specifying the Python version to use
       python-version:
         required: true
         type: string
-      docker-username:
-        required: true
-        type: string
-      docker-password:
-        required: true
-        type: string
+      # Input for specifying the name of the Docker image
       image-name:
         required: true
         type: string
+      # Input for specifying the tag of the Docker image; defaults to 'latest'
+      image-tag:
+        required: false
+        type: string
+        default: 'latest'
+      # Input for specifying the AWS region
+      aws-region:
+        required: true
+        type: string
+      # Input for providing a JSON string with environment variables
+      env:
+        required: true
+        type: string
+        description: 'JSON string containing environment variables (docker-username, docker-password, aws-role-to-assume)'
 
-# Define jobs to be executed by the workflow
+# Define the jobs and steps the workflow will execute
 jobs:
   build-and-push:
-    # Specifies the type of virtual host machine to use
+    # Specify the type of machine to run the job on
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks to be executed
+    # Steps represent a sequence of tasks that will be executed
     steps:
       - name: Checkout repository
-        # Uses the checkout action to access the content of the repository
+        # Use the GitHub 'checkout' action to check out the current repository code
         uses: actions/checkout@v2
 
-      - name: Set up Python ${{ inputs.python-version }}
-        # Sets up a Python environment with the specified version
+      - name: Set up Python
+        # Use the 'setup-python' action to configure the specified Python version
         uses: actions/setup-python@v2
         with:
           python-version: ${{ inputs.python-version }}
 
+      - name: Harden Runner
+        # Use the 'harden-runner' action to enhance security by auditing outbound traffic
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
+      - name: Configure AWS credentials
+        # Use the 'configure-aws-credentials' action to set up AWS credentials by assuming a role
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          # Extract the AWS role to assume from the input 'env' JSON string
+          role-to-assume: ${{ fromJSON(inputs.env).aws-role-to-assume }}
+          # Use the AWS region specified in the workflow input
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: Parse environment variables
+        # Run a custom script to parse the 'env' input and set Docker credentials as environment variables
+        run: |
+          echo "Parsing environment variables..."
+          env_data=$(echo '${{ inputs.env }}' | jq -r '.')
+          echo "DOCKER_USERNAME=$(echo "$env_data" | jq -r '.docker-username')" >> $GITHUB_ENV
+          echo "DOCKER_PASSWORD=$(echo "$env_data" | jq -r '.docker-password')" >> $GITHUB_ENV
+
+      - name: Login to Docker Hub
+        # Log in to Docker Hub using the parsed Docker credentials
+        run: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
       - name: Build and push Docker image
-        # Uses Docker's build-push-action to build and push the Docker image
+        # Use the 'build-push-action' to build and push the Docker image
         uses: docker/build-push-action@v2
         with:
-          username: ${{ inputs.docker-username }} # Docker Hub username
-          password: ${{ inputs.docker-password }} # Docker Hub password
-          repository: ${{ inputs.image-name }}    # Name of the Docker repository
-          push: true                              # Enables pushing the image to Docker Hub
-          tags: latest                            # Tags the image as latest
+          # Enable pushing the built image
+          push: true
+          # Set the tag for the Docker image using the workflow input
+          tags: ${{ inputs.image-name }}:${{ inputs.image-tag }}
