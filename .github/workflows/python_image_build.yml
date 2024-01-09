@@ -16,7 +16,7 @@ on:
 jobs:
   call-local-workflow:
     name: Call Workflow in Same repo as code
-    uses: ./.github/workflows/ldocket_login.yml
+    uses: ./.github/workflows/docket_login.yml
     secrets: inherit
 
   call-reomte-workflow:
