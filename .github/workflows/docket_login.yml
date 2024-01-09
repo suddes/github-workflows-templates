@@ -1,0 +1,29 @@
+
+# Define the name of the GitHub Actions workflow
+name: Docker Login
+
+# This workflow is triggered manually using workflow_dispatch
+on:
+  workflow_dispatch:
+    # Define inputs for the manual trigger
+    inputs:
+      # Input for specifying the environment (like dev, staging, prod)
+      environment:
+        description: 'Environment to run the workflow against (e.g., dev, staging, prod)'
+        required: true
+        type: string
+
+# Define the jobs to run
+jobs:
+  build-and-push:
+    # Specify the runner environment
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks to be executed
+    steps:
+    # This get the docker credential from specified env
+      - name: Debug Docker Login
+        run: |
+          echo "Logging into Docker Hub..."
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+          echo "Login successful."
