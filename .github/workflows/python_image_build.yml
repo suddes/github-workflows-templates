@@ -17,9 +17,13 @@ jobs:
   call-local-workflow:
     name: Call Workflow in Same repo as code
     uses: ./.github/workflows/docket_login.yml
+    with:
+      environment: ${{ inputs.environment }}
     secrets: inherit
 
   call-reomte-workflow:
       name: Call Workflow in different repo as code (need access)
       uses: suddes/github-workflows-templates/.github/workflows/docket_login.yml@main
+      with:
+        environment: ${{ inputs.environment }}
       secrets: inherit
