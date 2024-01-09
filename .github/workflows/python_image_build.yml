@@ -3,7 +3,7 @@ name: Python Image Build
 
 # This workflow is triggered by a call from another workflow
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
       python-version:
         required: true
