@@ -11,90 +11,19 @@ on:
         description: 'Environment to run the workflow against (e.g., dev, staging, prod)'
         required: true
         type: string
-      # Input for specifying the Python version
-      python-version:
-        description: 'The Python version to use (e.g., 3.8, 3.9)'
-        required: true
-        type: string
-      # Input for specifying the Docker image name
-      image-name:
-        description: 'The name of the Docker image'
-        required: true
-        type: string
-      # Input for specifying the Docker image tag
-      image-tag:
-        description: 'The tag for the Docker image'
-        required: false
-        type: string
-        default: 'latest'
-      
-      aws-region:
-          description: 'Deployment Regiom'
-          required: true
-          type: string
-          default: us-east-1
-
+    
 # Define the jobs to run
 jobs:
   build-and-push:
-    # Specify the runner environment
-    runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks to be executed
-    steps:
-      - name: Checkout repository
-        # Checkout the current repository to the runner
-        uses: actions/checkout@v2
-
-      - name: Set up Python
-        # Setup the specified version of Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ inputs.python-version }}
-
-      - name: Setup Environment Variables
-        # Run a custom script to set up environment-specific variables
-        run: |
-          if [ "${{ inputs.environment }}" = "dev" ]; then
-            echo "Setting up dev environment"
-            # Here you would set up environment variables or configurations specific to the development environment
-            echo "DEV_SPECIFIC_VAR=dev_value" >> $GITHUB_ENV
-          elif [ "${{ inputs.environment }}" = "staging" ]; then
-            echo "Setting up staging environment"
-            # Here you would set up environment variables or configurations specific to the staging environment
-            echo "STAGING_SPECIFIC_VAR=staging_value" >> $GITHUB_ENV
-          elif [ "${{ inputs.environment }}" = "prod" ]; then
-            echo "Setting up prod environment"
-            # Here you would set up environment variables or configurations specific to the production environment
-            echo "PROD_SPECIFIC_VAR=prod_value" >> $GITHUB_ENV
-          else
-            echo "Environment not recognized"
-            exit 1
-          fi
-
-      - name: Harden Runner
-        # Use the 'harden-runner' action to enhance security by auditing outbound traffic
-        uses: step-security/harden-runner@v2
-        with:
-          egress-policy: audit
-
-      - name: Configure AWS credentials
-        # Use the 'configure-aws-credentials' action to set up AWS credentials by assuming a role
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
-          aws-region: ${{ inputs.aws-region }}
+      name: Login to Docker Hub
+      # Log in to Docker Hub using the credentials from environment variables
+      permissions:
+          id-token: write # need this for OIDC
+          contents: read
+      uses: suddes/github-workflows-templates/blob/main/.github/workflows/docket_login.yml@main
+      with:
+            env: ${{ inputs.environment || 'dev' }}
+      secrets: inherit
 
 
-      - name: Login to Docker Hub
-        # Log in to Docker Hub using the credentials from environment variables
-        run: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-      
-      - name: Build and push Docker image
-        # Build and push the Docker image using the build-push-action
-        uses: docker/build-push-action@v2
-        with:
-          # Enable pushing the built image to a Docker registry
-          push: true
-          # Set the tag for the Docker image using the workflow input
-          tags: ${{ inputs.image-name }}:${{ inputs.image-tag }}
+  
