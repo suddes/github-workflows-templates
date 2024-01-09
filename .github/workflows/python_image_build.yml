@@ -1,0 +1,47 @@
+# Name of the workflow
+name: Python Image Build
+
+# This workflow is triggered by a call from another workflow
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        required: true
+        type: string
+      docker-username:
+        required: true
+        type: string
+      docker-password:
+        required: true
+        type: string
+      image-name:
+        required: true
+        type: string
+
+# Define jobs to be executed by the workflow
+jobs:
+  build-and-push:
+    # Specifies the type of virtual host machine to use
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks to be executed
+    steps:
+      - name: Checkout repository
+        # Uses the checkout action to access the content of the repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python ${{ inputs.python-version }}
+        # Sets up a Python environment with the specified version
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Build and push Docker image
+        # Uses Docker's build-push-action to build and push the Docker image
+        uses: docker/build-push-action@v2
+        with:
+          username: ${{ inputs.docker-username }} # Docker Hub username
+          password: ${{ inputs.docker-password }} # Docker Hub password
+          repository: ${{ inputs.image-name }}    # Name of the Docker repository
+          push: true                              # Enables pushing the image to Docker Hub
+          tags: latest                            # Tags the image as latest
