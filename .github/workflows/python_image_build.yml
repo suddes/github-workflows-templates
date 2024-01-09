@@ -4,56 +4,67 @@ name: Python Image Build
 # This workflow is triggered manually using workflow_dispatch
 on:
   workflow_dispatch:
-    # Define inputs that can be provided when this workflow is manually triggered
+    # Define inputs for the manual trigger
     inputs:
+      # Input for specifying the environment (like dev, staging, prod)
+      environment:
+        description: 'Environment to run the workflow against (e.g., dev, staging, prod)'
+        required: true
+        type: string
+      # Input for specifying the Python version
       python-version:
-        required: true
-        type: string
         description: 'The Python version to use (e.g., 3.8, 3.9)'
-      image-name:
         required: true
         type: string
+      # Input for specifying the Docker image name
+      image-name:
         description: 'The name of the Docker image'
+        required: true
+        type: string
+      # Input for specifying the Docker image tag
       image-tag:
+        description: 'The tag for the Docker image'
         required: false
         type: string
         default: 'latest'
-        description: 'The tag for the Docker image'
-      aws-region:
-        required: true
-        type: string
-        description: 'The AWS region for configuring AWS credentials'
-      env:
-        required: true
-        type: string
-        description: 'JSON string containing environment variables (docker-username, docker-password, aws-assume-role)'
 
-# Define the jobs and steps the workflow will execute
+# Define the jobs to run
 jobs:
   build-and-push:
-    # Specify the type of machine to run the job on
+    # Specify the runner environment
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed
+    # Steps represent a sequence of tasks to be executed
     steps:
       - name: Checkout repository
-        # Use the GitHub 'checkout' action to check out the current repository code
+        # Checkout the current repository to the runner
         uses: actions/checkout@v2
 
       - name: Set up Python
-        # Use the 'setup-python' action to configure the specified Python version
+        # Setup the specified version of Python
         uses: actions/setup-python@v2
         with:
           python-version: ${{ inputs.python-version }}
 
-      - name: Parse environment variables
-        # Run a custom script to parse the 'env' input and set it as environment variables
+      - name: Setup Environment Variables
+        # Run a custom script to set up environment-specific variables
         run: |
-          echo "Parsing environment variables..."
-          env_data=$(echo '${{ inputs.env }}' | jq -r '.')
-          echo "DOCKER_USERNAME=$(echo "$env_data" | jq -r '.docker-username')" >> $GITHUB_ENV
-          echo "DOCKER_PASSWORD=$(echo "$env_data" | jq -r '.docker-password')" >> $GITHUB_ENV
-          echo "AWS_ASSUME_ROLE=$(echo "$env_data" | jq -r '.aws-assume-role')" >> $GITHUB_ENV
+          if [ "${{ inputs.environment }}" = "dev" ]; then
+            echo "Setting up dev environment"
+            # Here you would set up environment variables or configurations specific to the development environment
+            echo "DEV_SPECIFIC_VAR=dev_value" >> $GITHUB_ENV
+          elif [ "${{ inputs.environment }}" = "staging" ]; then
+            echo "Setting up staging environment"
+            # Here you would set up environment variables or configurations specific to the staging environment
+            echo "STAGING_SPECIFIC_VAR=staging_value" >> $GITHUB_ENV
+          elif [ "${{ inputs.environment }}" = "prod" ]; then
+            echo "Setting up prod environment"
+            # Here you would set up environment variables or configurations specific to the production environment
+            echo "PROD_SPECIFIC_VAR=prod_value" >> $GITHUB_ENV
+          else
+            echo "Environment not recognized"
+            exit 1
+          fi
 
       - name: Harden Runner
         # Use the 'harden-runner' action to enhance security by auditing outbound traffic
@@ -68,15 +79,16 @@ jobs:
           role-to-assume: ${{ env.AWS_ASSUME_ROLE }}
           aws-region: ${{ inputs.aws-region }}
 
+
       - name: Login to Docker Hub
         # Log in to Docker Hub using the credentials from environment variables
         run: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-
+      
       - name: Build and push Docker image
-        # Use the 'build-push-action' to build and push the Docker image
+        # Build and push the Docker image using the build-push-action
         uses: docker/build-push-action@v2
         with:
-          # Enable pushing the built image
+          # Enable pushing the built image to a Docker registry
           push: true
           # Set the tag for the Docker image using the workflow input
           tags: ${{ inputs.image-name }}:${{ inputs.image-tag }}
