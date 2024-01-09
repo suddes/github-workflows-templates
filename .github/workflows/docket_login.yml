@@ -15,7 +15,7 @@ on:
 
 # Define the jobs to run
 jobs:
-  build-and-push:
+  docker-login:
     # Specify the runner environment
     runs-on: ubuntu-latest
 
