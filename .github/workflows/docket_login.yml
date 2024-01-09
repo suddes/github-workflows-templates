@@ -3,7 +3,7 @@ name: Docker Login
 
 # This workflow is triggered manually using workflow_dispatch
 on:
-  workflow_dispatch:
+  workflow_call:
     # Define inputs for the manual trigger
     inputs:
       # Input for specifying the environment (like dev, staging, prod)
