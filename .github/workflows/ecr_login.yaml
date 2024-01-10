@@ -1,5 +1,5 @@
 # Define the name of the GitHub Actions workflow
-name: Docker Login
+name: ECR Login
 
 # This workflow is triggered manually using workflow_dispatch
 on:
