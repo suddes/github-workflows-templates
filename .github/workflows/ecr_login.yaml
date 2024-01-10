@@ -1,11 +1,35 @@
+# Define the name of the GitHub Actions workflow
+name: Docker Login
+
+# This workflow is triggered manually using workflow_dispatch
+on:
+  workflow_dispatch:
+    # Define inputs for the manual trigger
+    inputs:
+      # Input for specifying the environment (like dev, staging, prod)
+      environment:
+        description: 'Environment to run the workflow against (e.g., dev, staging, prod)'
+        required: true
+        type: string
+
+# Define the jobs to run
+jobs:
+  ecr-login:
+    # Specify the runner environment
+    runs-on: ubuntu-latest
+    # Define secrets that will be used in the job
+    environment: ${{ inputs.environment }}
+    
+    # Steps represent a sequence of tasks to be executed
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+              role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+              aws-region: us-east-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
 
 
-- name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-        aws-region: us-east-1
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
