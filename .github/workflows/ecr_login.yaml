@@ -12,6 +12,10 @@ on:
         required: true
         type: string
 
+permissions:
+  id-token: write
+  contents: read
+  
 # Define the jobs to run
 jobs:
   ecr-login:
